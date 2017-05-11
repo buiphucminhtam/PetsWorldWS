@@ -1,0 +1,8 @@
+E:\My build code\My Project Webservices\PetsWorldWebservice\PetsWorldWebservice\bin\PetsWorldWebservice.dll.config
+E:\My build code\My Project Webservices\PetsWorldWebservice\PetsWorldWebservice\bin\PetsWorldWebservice.dll
+E:\My build code\My Project Webservices\PetsWorldWebservice\PetsWorldWebservice\bin\PetsWorldWebservice.pdb
+E:\My build code\My Project Webservices\PetsWorldWebservice\PetsWorldWebservice\bin\Newtonsoft.Json.dll
+E:\My build code\My Project Webservices\PetsWorldWebservice\PetsWorldWebservice\bin\Newtonsoft.Json.xml
+E:\My build code\My Project Webservices\PetsWorldWebservice\PetsWorldWebservice\obj\Release\PetsWorldWebservice.dll
+E:\My build code\My Project Webservices\PetsWorldWebservice\PetsWorldWebservice\obj\Release\PetsWorldWebservice.pdb
+E:\My build code\My Project Webservices\PetsWorldWebservice\PetsWorldWebservice\obj\Release\PetsWorldWebservice.csprojResolveAssemblyReference.cache
