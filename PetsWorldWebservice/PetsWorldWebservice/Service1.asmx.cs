@@ -77,8 +77,8 @@ namespace PetsWorldWebservice
             }
              catch(Exception e)
             {
-                 return e.Message;
-             }
+                 return "0";
+            }
             
             
         }
@@ -109,7 +109,7 @@ namespace PetsWorldWebservice
                 
             }
             
-            else return "";
+            else return "0";
          }
         
         //Update Post
@@ -212,7 +212,7 @@ namespace PetsWorldWebservice
              }
              catch (Exception e)
              {
-                 return e.Message;
+                 return "0";
              }
          }
          //Update User Info
@@ -270,7 +270,7 @@ namespace PetsWorldWebservice
              }
              catch (Exception e)
              {
-                 return e.Message;
+                 return "0";
              }
          }
 
@@ -422,6 +422,7 @@ namespace PetsWorldWebservice
             dtResult.Columns.Add(new DataColumn("MSG", Type.GetType("System.String")));
             dtResult.Columns.Add(new DataColumn("fullname", Type.GetType("System.String")));
             dtResult.Columns.Add(new DataColumn("id", Type.GetType("System.Int32")));
+            dtResult.Columns.Add(new DataColumn("userimage", Type.GetType("System.String")));
             DataRow dong = dtResult.NewRow();
             dtResult.Rows.Add(dong);
 
@@ -430,6 +431,7 @@ namespace PetsWorldWebservice
             dong["MSG"] = "";
             dong["fullname"] = "";
             dong["id"] = "0";
+            dong["userimage"] = "";
             clsDB db = null;
             try
             {
@@ -449,14 +451,16 @@ namespace PetsWorldWebservice
                 //get fullname and userId
                 string fullname = "";
                 int id = 0;
+                string userimage = "";
 
-                query = " select fullname,id from UserInfo  where username=N'" + userName + "' ";
+                query = " select fullname,id,userimage from UserInfo  where username=N'" + userName + "' ";
                 DataTable kh = db.getDataTable(query);
 
                 if (kh.Rows.Count > 0)
                 {
                     fullname = kh.Rows[0]["fullname"].ToString();
                     id = int.Parse(kh.Rows[0]["id"].ToString());
+                    userimage = kh.Rows[0]["userimage"].ToString();
                 }
 
           
@@ -464,6 +468,7 @@ namespace PetsWorldWebservice
                 dong["MSG"] = "Đăng nhập thành công!";
                 dong["fullname"] = fullname;
                 dong["id"] = id;
+                dong["userimage"] = userimage;
 
                 db.CLose_Connection();
 
@@ -499,13 +504,13 @@ namespace PetsWorldWebservice
                     cmd.Parameters.AddWithValue("@id", userid);
                     cmd.ExecuteNonQuery();
                     con.Close();
-                    return "1";
+                    return url;
                 }
-                else return url;
+                else return "0";
             }
             catch (Exception e)
             {
-                return e.Message;
+                return "0";
             }
         }
         [WebMethod]
@@ -533,7 +538,7 @@ namespace PetsWorldWebservice
             }
             catch (Exception e)
             {
-                return e.Message;
+                return "0";
             }         
         }
       
