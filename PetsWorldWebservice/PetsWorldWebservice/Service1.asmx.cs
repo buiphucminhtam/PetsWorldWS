@@ -225,7 +225,7 @@ namespace PetsWorldWebservice
 
                  string query = "UPDATE UserInfo"
                         + " SET fullname = @fullname,"
-                        + " phone = @phone"
+                        + " phone = @phone,"
                         + " address = @address"
                         + " WHERE id = @id";
                  clsDB db = new clsDB();
@@ -237,7 +237,8 @@ namespace PetsWorldWebservice
                  //Add values to query
                  cmd.Parameters.AddWithValue("@fullname", userinfo.GetValue("fullname").ToString());
                  cmd.Parameters.AddWithValue("@phone", userinfo.GetValue("phone").ToString());
-                 cmd.Parameters.AddWithValue("@address", userinfo.GetValue("address"));        
+                 cmd.Parameters.AddWithValue("@address", userinfo.GetValue("address").ToString());
+                 cmd.Parameters.AddWithValue("@id", Int64.Parse(userinfo.GetValue("id").ToString()));
        
                  cmd.ExecuteNonQuery();
                  con.Close();
@@ -313,7 +314,7 @@ namespace PetsWorldWebservice
 
                  string query = "UPDATE PetInfo"
                         + " SET name = @name,"
-                        + " type = @type"
+                        + " type = @type,"
                         + " vaccines = @vaccines"
                         + " WHERE id = @id";
                  clsDB db = new clsDB();
@@ -361,6 +362,116 @@ namespace PetsWorldWebservice
                  return 0;
              }
          }
+
+       
+
+         //PET TYPE
+         //Get PetType
+         [WebMethod]
+         public String GetPetType(int id)
+         {
+             try
+             {
+                 string query = String.Format("select * from PetType where id={0}", id);
+                 clsDB db = new clsDB();
+                 DataTable dt = db.getDataTable(query);
+                 string s = XuLy.XuLy.ParseDataTableToJSon(dt);
+                 db.CLose_Connection();
+                 return s;
+             }
+             catch (Exception e)
+             {
+                 return "0";
+             }
+         }
+
+         //Insert PetType
+         [WebMethod]
+         public int InsertPetType(string jsonPetType)
+         {
+
+             try
+             {
+                 JObject post = JObject.Parse(jsonPetType);
+                 string query = "Insert into PetType"
+                         + " values(@typename,GETDATE())";
+                 clsDB db = new clsDB();
+                 SqlCommand cmd = db.pSqlCmd;
+                 SqlConnection con = db.pConnection;
+                 cmd.CommandText = query;
+                 cmd.Connection = con;
+
+                 //Add values to query
+           
+                 cmd.Parameters.AddWithValue("@name", post.GetValue("name").ToString());
+              
+                 cmd.ExecuteNonQuery();
+                 con.Close();
+
+                 return 1;
+             }
+             catch (Exception e)
+             {
+                 return 0;
+             }
+         }
+
+         //Update PetType
+         [WebMethod]
+         public int UpdatePetType(string jsonPetType)
+         {
+             try
+             {
+                 JObject petInfo = JObject.Parse(jsonPetType);
+
+                 string query = "UPDATE PetType"
+                        + " SET name = @name,"
+                        + " WHERE id = @id";
+                 clsDB db = new clsDB();
+                 SqlCommand cmd = db.pSqlCmd;
+                 SqlConnection con = db.pConnection;
+                 cmd.CommandText = query;
+                 cmd.Connection = con;
+
+                 //Add values to query
+                 cmd.Parameters.AddWithValue("@name", petInfo.GetValue("name").ToString());
+                 cmd.Parameters.AddWithValue("@id", Convert.ToInt64(petInfo.GetValue("id")));
+
+                 cmd.ExecuteNonQuery();
+                 con.Close();
+
+                 return 1;
+             }
+             catch (Exception e)
+             {
+                 return 0;
+             }
+
+             return 0;
+         }
+            
+         //Delete PetType
+         public int DeletePetType(int id)
+         {
+             try
+             {
+                 string query = String.Format("DELETE FROM PetType Where id = {0}", id);
+                 clsDB db = new clsDB();
+
+                 SqlCommand cmd = db.pSqlCmd;
+                 SqlConnection con = db.pConnection;
+                 cmd.CommandText = query;
+                 cmd.Connection = con;
+                 cmd.ExecuteNonQuery();
+                 con.Close();
+                 return 1;
+             }
+             catch (Exception e)
+             {
+                 return 0;
+             }
+         }
+
 
         //REGISTER AND LOGIN
         //Đăng kí
@@ -431,7 +542,6 @@ namespace PetsWorldWebservice
             dong["MSG"] = "";
             dong["fullname"] = "";
             dong["id"] = "0";
-            dong["userimage"] = "";
             clsDB db = null;
             try
             {
@@ -453,14 +563,13 @@ namespace PetsWorldWebservice
                 int id = 0;
                 string userimage = "";
 
-                query = " select fullname,id,userimage from UserInfo  where username=N'" + userName + "' ";
+                query = " select fullname,id from UserInfo  where username=N'" + userName + "' ";
                 DataTable kh = db.getDataTable(query);
 
                 if (kh.Rows.Count > 0)
                 {
                     fullname = kh.Rows[0]["fullname"].ToString();
                     id = int.Parse(kh.Rows[0]["id"].ToString());
-                    userimage = kh.Rows[0]["userimage"].ToString();
                 }
 
           
@@ -468,8 +577,6 @@ namespace PetsWorldWebservice
                 dong["MSG"] = "Đăng nhập thành công!";
                 dong["fullname"] = fullname;
                 dong["id"] = id;
-                dong["userimage"] = userimage;
-
                 db.CLose_Connection();
 
                 return XuLy.XuLy.ParseDataTableToJSon(dtResult);
@@ -487,38 +594,40 @@ namespace PetsWorldWebservice
   
         //UPLOAD IMAGE
         [WebMethod]
-        public string UploadUserImage(string byteArray, int userid)
+        public string UploadUserImage(string byteArray, int userid,string url)
         {
             try
-            {
-                string url = SaveImageToStorage(byteArray, userid, 0);
-                if (!url.Equals("error"))
-                {
-                    string query = "Update UserInfo Set userimage = @url where id = @id";
-                    clsDB db = new clsDB();
-                    SqlCommand cmd = db.pSqlCmd;
-                    SqlConnection con = db.pConnection;
-                    cmd.Connection = con;
-                    cmd.CommandText = query;
-                    cmd.Parameters.AddWithValue("@url", url);
-                    cmd.Parameters.AddWithValue("@id", userid);
-                    cmd.ExecuteNonQuery();
-                    con.Close();
-                    return url;
+               {
+                 url = SaveImageToStorage(byteArray, userid,url);
+                   if (!url.Equals("error"))
+                    {
+                        string query = "Update UserInfo Set userimage = @url where id = @id";
+                        clsDB db = new clsDB();
+                        SqlCommand cmd = db.pSqlCmd;
+                        SqlConnection con = db.pConnection;
+                        cmd.Connection = con;
+                        cmd.CommandText = query;
+                        cmd.Parameters.AddWithValue("@url", url);
+                        cmd.Parameters.AddWithValue("@id", userid);
+                        cmd.ExecuteNonQuery();
+                        con.Close();
+                        return url;
+                    }
+                    else return "0";
                 }
-                else return "0";
-            }
-            catch (Exception e)
-            {
-                return "0";
-            }
+                catch (Exception e)
+                {
+                    return "0";
+                }
+           
+            
         }
         [WebMethod]
-        public string UploadPetImage(string byteArray,int userid,int petid)
+        public string UploadPetImage(string byteArray,int userid,int petid,string url)
         {
             try
-            {   
-                string url = SaveImageToStorage(byteArray,userid,petid);
+            {
+                url = SaveImageToStoragePetImage(byteArray, userid, petid, url);
                 if (!url.Equals("error"))
                 {
                     string query = "Insert into Photo values(@url,@userid,@petid,GETDATE())";
@@ -542,41 +651,144 @@ namespace PetsWorldWebservice
             }         
         }
       
-        public string SaveImageToStorage(string byteArray,int userid,int petid)
+        public string SaveImageToStoragePetImage(string byteArray,int userid,int petid,string url)
         {
-          
             byte[] image_byte = Convert.FromBase64String(byteArray);
             Int64 unixTimestamp = (Int64)DateTime.Now.Millisecond;
             Guid guid = Guid.NewGuid();
-            // the byte array argument contains the content of the file 
-            // the string argument contains the name and extension 
-            // of the file passed in the byte array 
-            try
+            
+            if (url.Equals("None"))
             {
-                // instance a memory stream and pass the 
-                // byte array to its constructor 
-                MemoryStream ms = new MemoryStream(image_byte);
-                // instance a filestream pointing to the 
-                // storage folder, use the original file name 
-                // to name the resulting file 
-                string path = System.Web.Hosting.HostingEnvironment.MapPath
-                            ("~/UploadPhoto/") + userid + "-" + petid +".png";
-                FileStream fs = new FileStream(path, FileMode.Create);
-                // write the memory stream containing the original 
-                // file as a byte array to the filestream 
-                ms.WriteTo(fs);
-                // clean up 
-                ms.Close();
-                fs.Close();
-                fs.Dispose();
-                // return OK if we made it this far 
-                return path;
+                try
+                {// the byte array argument contains the content of the file 
+                    // the string argument contains the name and extension 
+                    // of the file passed in the byte array 
+                    // instance a memory stream and pass the 
+                    // byte array to its constructor 
+                    MemoryStream ms = new MemoryStream(image_byte);
+                    // instance a filestream pointing to the 
+                    // storage folder, use the original file name 
+                    // to name the resulting file 
+                    string path = Server.MapPath
+                                ("~/UploadPhoto/") + userid + petid + guid + ".png";
+                    FileStream fs = new FileStream(path, FileMode.Create);
+                    // write the memory stream containing the original 
+                    // file as a byte array to the filestream 
+                    ms.WriteTo(fs);
+                    // clean up 
+                    ms.Close();
+                    fs.Close();
+                    fs.Dispose();
+                    // return OK if we made it this far 
+                    return path;
+                }
+                catch (Exception ex)
+                {
+                    // return the error message if the operation fails 
+                    return "error";
+                } 
             }
-            catch (Exception ex)
+            else
             {
-                // return the error message if the operation fails 
-                return "error";
-            } 
+                try
+                {// the byte array argument contains the content of the file 
+                    // the string argument contains the name and extension 
+                    // of the file passed in the byte array 
+                    // instance a memory stream and pass the 
+                    // byte array to its constructor 
+                    MemoryStream ms = new MemoryStream(image_byte);
+                    // instance a filestream pointing to the 
+                    // storage folder, use the original file name 
+                    // to name the resulting file 
+             
+                    FileStream fs = new FileStream(url, FileMode.Create);
+                    // write the memory stream containing the original 
+                    // file as a byte array to the filestream 
+                    ms.WriteTo(fs);
+                    // clean up 
+                    ms.Close();
+                    fs.Close();
+                    fs.Dispose();
+                    // return OK if we made it this far 
+                    return url;
+                }
+                catch (Exception ex)
+                {
+                    // return the error message if the operation fails 
+                    return "error";
+                } 
+            }
+            
+        }
+        public string SaveImageToStorage(string byteArray, int userid, string url)
+        {
+            byte[] image_byte = Convert.FromBase64String(byteArray);
+            Int64 unixTimestamp = (Int64)DateTime.Now.Millisecond;
+            Guid guid = Guid.NewGuid();
+
+            if (url.Equals("None"))
+            {
+                try
+                {// the byte array argument contains the content of the file 
+                    // the string argument contains the name and extension 
+                    // of the file passed in the byte array 
+                    // instance a memory stream and pass the 
+                    // byte array to its constructor 
+                    MemoryStream ms = new MemoryStream(image_byte);
+                    // instance a filestream pointing to the 
+                    // storage folder, use the original file name 
+                    // to name the resulting file 
+                    string path = "UploadPhoto/" + userid + guid + ".png";
+                    string pathtosave = Server.MapPath
+                                ("~/"+path);
+                    FileStream fs = new FileStream(pathtosave, FileMode.Create);
+                    // write the memory stream containing the original 
+                    // file as a byte array to the filestream 
+                    ms.WriteTo(fs);
+                    // clean up 
+                    ms.Close();
+                    fs.Close();
+                    fs.Dispose();
+                    // return OK if we made it this far 
+                    return path;
+                }
+                catch (Exception ex)
+                {
+                    // return the error message if the operation fails 
+                    return "error";
+                }
+            }
+            else
+            {
+                try
+                {// the byte array argument contains the content of the file 
+                    // the string argument contains the name and extension 
+                    // of the file passed in the byte array 
+                    // instance a memory stream and pass the 
+                    // byte array to its constructor 
+                    MemoryStream ms = new MemoryStream(image_byte);
+                    // instance a filestream pointing to the 
+                    // storage folder, use the original file name 
+                    // to name the resulting file 
+
+                    FileStream fs = new FileStream(url, FileMode.Create);
+                    // write the memory stream containing the original 
+                    // file as a byte array to the filestream 
+                    ms.WriteTo(fs);
+                    // clean up 
+                    ms.Close();
+                    fs.Close();
+                    fs.Dispose();
+                    // return OK if we made it this far 
+                    return url;
+                }
+                catch (Exception ex)
+                {
+                    // return the error message if the operation fails 
+                    return "error";
+                }
+            }
+
         }
 
         public static string GetLocalIPAddress()
