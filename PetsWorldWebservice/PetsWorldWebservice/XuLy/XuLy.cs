@@ -16,6 +16,7 @@ using System.Runtime.Serialization.Formatters.Binary;
 using System.Text.RegularExpressions;
 using System.Text;
 using System.Drawing;
+using Newtonsoft.Json;
 
 namespace PetsWorldWebservice.XuLy
 {
@@ -580,24 +581,26 @@ namespace PetsWorldWebservice.XuLy
 
         public static string ParseDataTableToJSon(DataTable dt)
         {
-            System.Web.Script.Serialization.JavaScriptSerializer serializer = new System.Web.Script.Serialization.JavaScriptSerializer();
-            serializer.MaxJsonLength = 2147483644;
+            string json = JsonConvert.SerializeObject(dt, Newtonsoft.Json.Formatting.Indented);
+            //system.web.script.serialization.javascriptserializer serializer = new system.web.script.serialization.javascriptserializer();
+            //serializer.maxjsonlength = 2147483644;
 
-            List<Dictionary<string, object>> rows = new List<Dictionary<string, object>>();
-            Dictionary<string, object> row;
-            foreach (DataRow dr in dt.Rows)
-            {
-                row = new Dictionary<string, object>();
-                foreach (DataColumn col in dt.Columns)
-                {
-                    row.Add(col.ColumnName, dr[col]);
-                }
-                rows.Add(row);
-            }
+            //list<dictionary<string, object>> rows = new list<dictionary<string, object>>();
+            //dictionary<string, object> row;
+            //foreach (datarow dr in dt.rows)
+            //{
+            //    row = new dictionary<string, object>();
+            //    foreach (datacolumn col in dt.columns)
+            //    {
+            //        row.add(col.columnname, dr[col]);
+            //    }
+            //    rows.add(row);
+            //}
 
-            dt.Clear();
-            dt.Clone();
-            return serializer.Serialize(rows);
+            //dt.clear();
+            //dt.clone();
+            //return serializer.serialize(rows);
+            return json;
 
         }
 

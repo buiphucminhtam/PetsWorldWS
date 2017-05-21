@@ -368,11 +368,11 @@ namespace PetsWorldWebservice
          //PET TYPE
          //Get PetType
          [WebMethod]
-         public String GetPetType(int id)
+         public String GetPetType()
          {
              try
              {
-                 string query = String.Format("select * from PetType where id={0}", id);
+                 string query = String.Format("select * from PetType");
                  clsDB db = new clsDB();
                  DataTable dt = db.getDataTable(query);
                  string s = XuLy.XuLy.ParseDataTableToJSon(dt);
@@ -394,7 +394,7 @@ namespace PetsWorldWebservice
              {
                  JObject post = JObject.Parse(jsonPetType);
                  string query = "Insert into PetType"
-                         + " values(@typename,GETDATE())";
+                         + " values(@name,GETDATE())";
                  clsDB db = new clsDB();
                  SqlCommand cmd = db.pSqlCmd;
                  SqlConnection con = db.pConnection;
@@ -403,8 +403,7 @@ namespace PetsWorldWebservice
 
                  //Add values to query
            
-                 cmd.Parameters.AddWithValue("@name", post.GetValue("name").ToString());
-              
+                 cmd.Parameters.AddWithValue("@name", post.GetValue("name").ToString());              
                  cmd.ExecuteNonQuery();
                  con.Close();
 
@@ -425,7 +424,7 @@ namespace PetsWorldWebservice
                  JObject petInfo = JObject.Parse(jsonPetType);
 
                  string query = "UPDATE PetType"
-                        + " SET name = @name,"
+                        + " SET typename = @typename,"
                         + " WHERE id = @id";
                  clsDB db = new clsDB();
                  SqlCommand cmd = db.pSqlCmd;
@@ -434,7 +433,7 @@ namespace PetsWorldWebservice
                  cmd.Connection = con;
 
                  //Add values to query
-                 cmd.Parameters.AddWithValue("@name", petInfo.GetValue("name").ToString());
+                 cmd.Parameters.AddWithValue("@typename", petInfo.GetValue("typename").ToString());
                  cmd.Parameters.AddWithValue("@id", Convert.ToInt64(petInfo.GetValue("id")));
 
                  cmd.ExecuteNonQuery();
