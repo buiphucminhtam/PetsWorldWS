@@ -68,7 +68,10 @@ namespace PetsWorldWebservice
         {
             try
             {
-                string query = String.Format("select * from FindOwner where id>{0} and id<={0}+10",id);
+                string query = String.Format("select FindOwner.id,UserInfo.fullname,FindOwner.datecreated,PetInfo.id as [petId],PetInfo.name as [petname],PetType.typename,PetInfo.vaccine"
+                +" from FindOwner join UserInfo on FindOwner.userid = UserInfo.id" 
+                +" join Petinfo on FindOwner.petid = Petinfo.id"
+                + " join PetType on PetInfo.typeid = PetType.id where FindOwner.id>{0} and FindOwner.id<={0}+10", id);
                 clsDB db = new clsDB();
                 DataTable dt = db.getDataTable(query);
                 string s = XuLy.XuLy.ParseDataTableToJSon(dt);
@@ -79,8 +82,6 @@ namespace PetsWorldWebservice
             {
                  return "0";
             }
-            
-            
         }
         
         //Get 10 old post for load more
@@ -90,7 +91,10 @@ namespace PetsWorldWebservice
             if(id>0){
                 if(id-10>=0) // kiểm tra xem còn đủ 10 bài để lấy ko nếu ko thì lấy hết
                 {
-                    string query = String.Format("select * from FindOwner where id>={0}-10 and id<{0} order by id desc",id);
+                    string query = String.Format("select FindOwner.id,UserInfo.fullname,FindOwner.datecreated,PetInfo.id as [petId],PetInfo.name as [petname],PetType.typename,PetInfo.vaccine"
+                + " from FindOwner join UserInfo on FindOwner.userid = UserInfo.id"
+                + " join Petinfo on FindOwner.petid = Petinfo.id"
+                + " join PetType on PetInfo.typeid = PetType.id where FindOwner.id>={0}-10 and FindOwner.id<{0} order by id desc", id);
                     clsDB db = new clsDB();
                     DataTable dt = db.getDataTable(query);
                     string s = XuLy.XuLy.ParseDataTableToJSon(dt);
@@ -99,7 +103,10 @@ namespace PetsWorldWebservice
                 }
                 else
                 {
-                    string query = String.Format("select * from FindOwner where id<{0}",id);
+                    string query = String.Format("select FindOwner.id,UserInfo.fullname,FindOwner.datecreated,PetInfo.id as [petId],PetInfo.name as [petname],PetType.typename,PetInfo.vaccine"
+                + " from FindOwner join UserInfo on FindOwner.userid = UserInfo.id"
+                + " join Petinfo on FindOwner.petid = Petinfo.id"
+                + " join PetType on PetInfo.typeid = PetType.id where FindOwner.id<{0}", id);
                     clsDB db = new clsDB();
                     DataTable dt = db.getDataTable(query);
                     string s = XuLy.XuLy.ParseDataTableToJSon(dt);
@@ -171,7 +178,7 @@ namespace PetsWorldWebservice
         {
             try{
                 JObject post = JObject.Parse(jsonPost);
-                string query = "Insert into FindOwner"
+                string query = "Insert into FindOwner " + "OUTPUT INSERTED.ID"
                         +" values(@userid,@petid,@description,@requirement,GETDATE())";
                 clsDB db = new clsDB();
                 SqlCommand cmd = db.pSqlCmd;
@@ -181,14 +188,14 @@ namespace PetsWorldWebservice
             
                 //Add values to query
                 cmd.Parameters.AddWithValue("@userid", Convert.ToInt64(post.GetValue("userid").ToString()));
-                cmd.Parameters.AddWithValue("@name", post.GetValue("name").ToString());
-                cmd.Parameters.AddWithValue("@type", post.GetValue("type").ToString());
-                cmd.Parameters.AddWithValue("@vacines",post.GetValue("id").ToString());
+                cmd.Parameters.AddWithValue("@petid", Convert.ToInt64(post.GetValue("petid").ToString()));
+                cmd.Parameters.AddWithValue("@description", post.GetValue("description").ToString());
+                cmd.Parameters.AddWithValue("@requirement", post.GetValue("requirement").ToString());
 
-                cmd.ExecuteNonQuery();
+                Int32 id = Convert.ToInt32(cmd.ExecuteScalar());
                 con.Close();
 
-                return 1;
+                return id;
             }
             catch(Exception e){
                 return 0;
@@ -253,6 +260,35 @@ namespace PetsWorldWebservice
              return 0;
          }
 
+         [WebMethod]
+         public int ChangePassword(string newpassword,int id) {
+             try
+             {
+                  string query = "UPDATE UserInfo"
+                        + " SET password = PWDENCRYPT(@password)"
+                        + " WHERE id = @id";
+
+                 clsDB db = new clsDB();
+                 SqlCommand cmd = db.pSqlCmd;
+                 SqlConnection con = db.pConnection;
+                 cmd.CommandText = query;
+                 cmd.Connection = con;
+
+                 //Add values to query
+               
+                 cmd.Parameters.AddWithValue("@id", id);
+                 cmd.Parameters.AddWithValue("@password",newpassword);
+       
+                 cmd.ExecuteNonQuery();
+                 con.Close();
+
+                 return 1;
+             }catch(Exception e)
+             {
+                 return 0;
+             }
+         }
+            
 
       
         //PET INFO
@@ -279,10 +315,9 @@ namespace PetsWorldWebservice
          [WebMethod]
         public int InsertPetInfo(string jsonPetInfo)
         {
-
            try{
                 JObject post = JObject.Parse(jsonPetInfo);
-                string query = "Insert into PetInfo"
+                string query = "Insert into PetInfo " + "OUTPUT INSERTED.ID"
                         +" values(@userid,@name,@type,@vacines,GETDATE())";
                 clsDB db = new clsDB();
                 SqlCommand cmd = db.pSqlCmd;
@@ -294,12 +329,12 @@ namespace PetsWorldWebservice
                 cmd.Parameters.AddWithValue("@userid", Convert.ToInt64(post.GetValue("userid").ToString()));
                 cmd.Parameters.AddWithValue("@name", post.GetValue("name").ToString());
                 cmd.Parameters.AddWithValue("@type", Convert.ToInt64(post.GetValue("typeid").ToString()));
-                cmd.Parameters.AddWithValue("@vacines",Convert.ToInt64(post.GetValue("id").ToString()));
+                cmd.Parameters.AddWithValue("@vacines", Convert.ToInt64(post.GetValue("vacines").ToString()));
 
-                cmd.ExecuteNonQuery();
+                 Int32 id = Convert.ToInt32(cmd.ExecuteScalar());
                 con.Close();
 
-                return 1;
+                return id;
             }
             catch(Exception e){
                 return 0;
@@ -589,7 +624,23 @@ namespace PetsWorldWebservice
             }
 
         }
-
+        //GET IMAGE 
+        [WebMethod]
+        public string GetPhotoById(int petId) {
+            try
+            {
+                string query = String.Format("select * from Photo where petid = {0}",petId);
+                clsDB db = new clsDB();
+                DataTable dt = db.getDataTable(query);
+                string s = XuLy.XuLy.ParseDataTableToJSon(dt);
+                db.CLose_Connection();
+                return s;
+            }
+            catch (Exception e)
+            {
+                return "0";
+            }
+        }
   
         //UPLOAD IMAGE
         [WebMethod]
@@ -622,11 +673,11 @@ namespace PetsWorldWebservice
             
         }
         [WebMethod]
-        public string UploadPetImage(string byteArray,int userid,int petid,string url)
+        public string UploadPetImage(string byteArray,int userid,int petid)
         {
             try
             {
-                url = SaveImageToStoragePetImage(byteArray, userid, petid, url);
+                String url = SaveImageToStoragePetImage(byteArray, userid, petid);
                 if (!url.Equals("error"))
                 {
                     string query = "Insert into Photo values(@url,@userid,@petid,GETDATE())";
@@ -650,14 +701,12 @@ namespace PetsWorldWebservice
             }         
         }
       
-        public string SaveImageToStoragePetImage(string byteArray,int userid,int petid,string url)
+        public string SaveImageToStoragePetImage(string byteArray,int userid,int petid)
         {
             byte[] image_byte = Convert.FromBase64String(byteArray);
             Int64 unixTimestamp = (Int64)DateTime.Now.Millisecond;
             Guid guid = Guid.NewGuid();
             
-            if (url.Equals("None"))
-            {
                 try
                 {// the byte array argument contains the content of the file 
                     // the string argument contains the name and extension 
@@ -668,9 +717,10 @@ namespace PetsWorldWebservice
                     // instance a filestream pointing to the 
                     // storage folder, use the original file name 
                     // to name the resulting file 
-                    string path = Server.MapPath
-                                ("~/UploadPhoto/") + userid + petid + guid + ".png";
-                    FileStream fs = new FileStream(path, FileMode.Create);
+                    string path = "UploadPhoto/" + userid + petid + guid + ".png";
+                    string pathtosave = Server.MapPath
+                                ("~/" + path);
+                    FileStream fs = new FileStream(pathtosave, FileMode.Create);
                     // write the memory stream containing the original 
                     // file as a byte array to the filestream 
                     ms.WriteTo(fs);
@@ -686,37 +736,8 @@ namespace PetsWorldWebservice
                     // return the error message if the operation fails 
                     return "error";
                 } 
-            }
-            else
-            {
-                try
-                {// the byte array argument contains the content of the file 
-                    // the string argument contains the name and extension 
-                    // of the file passed in the byte array 
-                    // instance a memory stream and pass the 
-                    // byte array to its constructor 
-                    MemoryStream ms = new MemoryStream(image_byte);
-                    // instance a filestream pointing to the 
-                    // storage folder, use the original file name 
-                    // to name the resulting file 
-             
-                    FileStream fs = new FileStream(url, FileMode.Create);
-                    // write the memory stream containing the original 
-                    // file as a byte array to the filestream 
-                    ms.WriteTo(fs);
-                    // clean up 
-                    ms.Close();
-                    fs.Close();
-                    fs.Dispose();
-                    // return OK if we made it this far 
-                    return url;
-                }
-                catch (Exception ex)
-                {
-                    // return the error message if the operation fails 
-                    return "error";
-                } 
-            }
+         
+            
             
         }
         public string SaveImageToStorage(string byteArray, int userid, string url)
