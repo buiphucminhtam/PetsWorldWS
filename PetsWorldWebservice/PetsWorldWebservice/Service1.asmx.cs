@@ -68,7 +68,7 @@ namespace PetsWorldWebservice
         {
             try
             {
-                string query = String.Format("select FindOwner.id,UserInfo.fullname,FindOwner.datecreated,PetInfo.id as [petId],PetInfo.name as [petname],PetType.typename,PetInfo.vaccine"
+                string query = String.Format("select FindOwner.id,UserInfo.fullname,convert(varchar,FindOwner.datecreated,100) as [datecreated],PetInfo.id as [petId],PetInfo.name as [petname],PetType.typename,PetInfo.vaccine, FindOwner.userid as [userId], FindOwner.description, FindOwner.requirement, convert(varchar,PetInfo.vaccinedate,103) as [vaccinedate]"
                 +" from FindOwner join UserInfo on FindOwner.userid = UserInfo.id" 
                 +" join Petinfo on FindOwner.petid = Petinfo.id"
                 + " join PetType on PetInfo.typeid = PetType.id where FindOwner.id>{0} and FindOwner.id<={0}+10", id);
@@ -91,10 +91,11 @@ namespace PetsWorldWebservice
             if(id>0){
                 if(id-10>=0) // kiểm tra xem còn đủ 10 bài để lấy ko nếu ko thì lấy hết
                 {
-                    string query = String.Format("select FindOwner.id,UserInfo.fullname,FindOwner.datecreated,PetInfo.id as [petId],PetInfo.name as [petname],PetType.typename,PetInfo.vaccine"
+
+                    string query = String.Format("select FindOwner.id,UserInfo.fullname,convert(varchar,FindOwner.datecreated,100) as [datecreated],PetInfo.id as [petId],PetInfo.name as [petname],PetType.typename,PetInfo.vaccine, FindOwner.userid as [userId], FindOwner.description, FindOwner.requirement, convert(varchar,PetInfo.vaccinedate,103) as [vaccinedate]"
                 + " from FindOwner join UserInfo on FindOwner.userid = UserInfo.id"
                 + " join Petinfo on FindOwner.petid = Petinfo.id"
-                + " join PetType on PetInfo.typeid = PetType.id where FindOwner.id>={0}-10 and FindOwner.id<{0} order by id desc", id);
+                + " join PetType on PetInfo.typeid = PetType.id where FindOwner.id>={0}-10 and FindOwner.id<={0} order by id desc", id);
                     clsDB db = new clsDB();
                     DataTable dt = db.getDataTable(query);
                     string s = XuLy.XuLy.ParseDataTableToJSon(dt);
@@ -103,8 +104,8 @@ namespace PetsWorldWebservice
                 }
                 else
                 {
-                    string query = String.Format("select FindOwner.id,UserInfo.fullname,FindOwner.datecreated,PetInfo.id as [petId],PetInfo.name as [petname],PetType.typename,PetInfo.vaccine"
-                + " from FindOwner join UserInfo on FindOwner.userid = UserInfo.id"
+                    string query = String.Format("select FindOwner.id,UserInfo.fullname,convert(varchar,FindOwner.datecreated,100) as [datecreated],PetInfo.id as [petId],PetInfo.name as [petname],PetType.typename,PetInfo.vaccine, FindOwner.userid as [userId], FindOwner.description, FindOwner.requirement, convert(varchar,PetInfo.vaccinedate,103) as [vaccinedate]"
+                + " from FindOwner join UserInfo on FindOwner.userid = UserInfo.id" 
                 + " join Petinfo on FindOwner.petid = Petinfo.id"
                 + " join PetType on PetInfo.typeid = PetType.id where FindOwner.id<{0}", id);
                     clsDB db = new clsDB();
@@ -119,6 +120,28 @@ namespace PetsWorldWebservice
             else return "0";
          }
         
+
+        //Get post with user id
+         [WebMethod]
+        public string GetPostFindOwnerByUserId(int userId){
+            try
+            {
+                string query = String.Format("select FindOwner.id,UserInfo.fullname,convert(varchar,FindOwner.datecreated,100) as [datecreated],PetInfo.id as [petId],PetInfo.name as [petname],PetType.typename,PetInfo.vaccine, FindOwner.userid as [userId], FindOwner.description, FindOwner.requirement, convert(varchar,PetInfo.vaccinedate,103) as [vaccinedate]"
+                + " from FindOwner join UserInfo on FindOwner.userid = UserInfo.id"
+                + " join Petinfo on FindOwner.petid = Petinfo.id"
+                + " join PetType on PetInfo.typeid = PetType.id where FindOwner.userid = {0}", userId);
+                clsDB db = new clsDB();
+                DataTable dt = db.getDataTable(query);
+                string s = XuLy.XuLy.ParseDataTableToJSon(dt);
+                db.CLose_Connection();
+                return s;
+            }
+            catch (Exception e)
+            {
+                return "0";
+            }
+        }
+
         //Update Post
         [WebMethod]
         public int UpdatePostFindOwner(string jsonPost)
@@ -259,7 +282,7 @@ namespace PetsWorldWebservice
 
              return 0;
          }
-
+         //ChangeUserPassword
          [WebMethod]
          public int ChangePassword(string newpassword,int id) {
              try
@@ -318,7 +341,7 @@ namespace PetsWorldWebservice
            try{
                 JObject post = JObject.Parse(jsonPetInfo);
                 string query = "Insert into PetInfo " + "OUTPUT INSERTED.ID"
-                        +" values(@userid,@name,@type,@vacines,GETDATE())";
+                        + " values(@userid,@name,@type,@vaccine,@vaccinedate)";
                 clsDB db = new clsDB();
                 SqlCommand cmd = db.pSqlCmd;
                 SqlConnection con = db.pConnection;
@@ -329,7 +352,8 @@ namespace PetsWorldWebservice
                 cmd.Parameters.AddWithValue("@userid", Convert.ToInt64(post.GetValue("userid").ToString()));
                 cmd.Parameters.AddWithValue("@name", post.GetValue("name").ToString());
                 cmd.Parameters.AddWithValue("@type", Convert.ToInt64(post.GetValue("typeid").ToString()));
-                cmd.Parameters.AddWithValue("@vacines", Convert.ToInt64(post.GetValue("vacines").ToString()));
+                cmd.Parameters.AddWithValue("@vaccine", Convert.ToInt64(post.GetValue("vaccine").ToString()));
+                cmd.Parameters.AddWithValue("@vaccinedate", post.GetValue("vaccinedate").ToString());
 
                  Int32 id = Convert.ToInt32(cmd.ExecuteScalar());
                 con.Close();
@@ -349,8 +373,9 @@ namespace PetsWorldWebservice
 
                  string query = "UPDATE PetInfo"
                         + " SET name = @name,"
-                        + " type = @type,"
-                        + " vaccines = @vaccines"
+                        + " typeid = @typeid,"
+                        + " vaccine = @vaccine,"
+                        + " vaccinedate = @vaccinedate"
                         + " WHERE id = @id";
                  clsDB db = new clsDB();
                  SqlCommand cmd = db.pSqlCmd;
@@ -360,8 +385,9 @@ namespace PetsWorldWebservice
 
                  //Add values to query
                  cmd.Parameters.AddWithValue("@name", petInfo.GetValue("name").ToString());
-                 cmd.Parameters.AddWithValue("@type", Convert.ToInt64(petInfo.GetValue("typeid").ToString()));
-                 cmd.Parameters.AddWithValue("@vaccines", Convert.ToInt64(petInfo.GetValue("id").ToString()));
+                 cmd.Parameters.AddWithValue("@typeid", Convert.ToInt64(petInfo.GetValue("typeid").ToString()));
+                 cmd.Parameters.AddWithValue("@vaccine", Convert.ToInt64(petInfo.GetValue("vaccine").ToString()));
+                 cmd.Parameters.AddWithValue("@vaccinedate", petInfo.GetValue("vaccinedate").ToString());
                  cmd.Parameters.AddWithValue("@id", Convert.ToInt64(petInfo.GetValue("id")));
 
                  cmd.ExecuteNonQuery();
@@ -419,7 +445,6 @@ namespace PetsWorldWebservice
                  return "0";
              }
          }
-
          //Insert PetType
          [WebMethod]
          public int InsertPetType(string jsonPetType)
@@ -449,7 +474,6 @@ namespace PetsWorldWebservice
                  return 0;
              }
          }
-
          //Update PetType
          [WebMethod]
          public int UpdatePetType(string jsonPetType)
@@ -482,8 +506,7 @@ namespace PetsWorldWebservice
              }
 
              return 0;
-         }
-            
+         } 
          //Delete PetType
          public int DeletePetType(int id)
          {
@@ -534,7 +557,7 @@ namespace PetsWorldWebservice
 
                      String query = "INSERT INTO UserInfo"
                          + " (username,password,fullname,phone,address,datecreated,userimage)"
-                         + " VALUES(@username,PWDENCRYPT(@password),@fullname,@phone,@address,@datecreated,@userimage)";
+                         + " VALUES(@username,PWDENCRYPT(@password),@fullname,@phone,@address,GETDATE(),@userimage)";
 
                      cmd.CommandText = query;
 
@@ -544,7 +567,6 @@ namespace PetsWorldWebservice
                      cmd.Parameters.AddWithValue("@fullname", user.GetValue("fullname").ToString());
                      cmd.Parameters.AddWithValue("@phone", user.GetValue("phone").ToString());
                      cmd.Parameters.AddWithValue("@address", user.GetValue("address").ToString());
-                     cmd.Parameters.AddWithValue("@datecreated", DateTime.Parse(user.GetValue("datecreated").ToString()));
                      cmd.Parameters.AddWithValue("@userimage", user.GetValue("userimage").ToString());
 
                      cmd.ExecuteNonQuery();
@@ -567,7 +589,6 @@ namespace PetsWorldWebservice
             dtResult.Columns.Add(new DataColumn("MSG", Type.GetType("System.String")));
             dtResult.Columns.Add(new DataColumn("fullname", Type.GetType("System.String")));
             dtResult.Columns.Add(new DataColumn("id", Type.GetType("System.Int32")));
-            dtResult.Columns.Add(new DataColumn("userimage", Type.GetType("System.String")));
             DataRow dong = dtResult.NewRow();
             dtResult.Rows.Add(dong);
 
@@ -595,7 +616,7 @@ namespace PetsWorldWebservice
                 //get fullname and userId
                 string fullname = "";
                 int id = 0;
-                string userimage = "";
+
 
                 query = " select fullname,id from UserInfo  where username=N'" + userName + "' ";
                 DataTable kh = db.getDataTable(query);
@@ -790,8 +811,10 @@ namespace PetsWorldWebservice
                     // instance a filestream pointing to the 
                     // storage folder, use the original file name 
                     // to name the resulting file 
-
-                    FileStream fs = new FileStream(url, FileMode.Create);
+                    string pathtosave = Server.MapPath
+                                 ("~/" + url);
+                    FileStream fs = new FileStream(pathtosave, FileMode.Create);
+                    
                     // write the memory stream containing the original 
                     // file as a byte array to the filestream 
                     ms.WriteTo(fs);
@@ -807,6 +830,20 @@ namespace PetsWorldWebservice
                     // return the error message if the operation fails 
                     return "error";
                 }
+            }
+
+        }
+
+        public void DeleteFileFromFolder(string StrFilename)
+        {
+
+            string strPhysicalFolder = Server.MapPath("~/");
+
+            string strFileFullPath = strPhysicalFolder + StrFilename;
+
+            if (System.IO.File.Exists(strFileFullPath))
+            {
+                System.IO.File.Delete(strFileFullPath);
             }
 
         }
