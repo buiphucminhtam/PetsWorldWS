@@ -581,25 +581,7 @@ namespace PetsWorldWebservice.XuLy
 
         public static string ParseDataTableToJSon(DataTable dt)
         {
-            string json = JsonConvert.SerializeObject(dt, Newtonsoft.Json.Formatting.Indented);
-            //system.web.script.serialization.javascriptserializer serializer = new system.web.script.serialization.javascriptserializer();
-            //serializer.maxjsonlength = 2147483644;
-
-            //list<dictionary<string, object>> rows = new list<dictionary<string, object>>();
-            //dictionary<string, object> row;
-            //foreach (datarow dr in dt.rows)
-            //{
-            //    row = new dictionary<string, object>();
-            //    foreach (datacolumn col in dt.columns)
-            //    {
-            //        row.add(col.columnname, dr[col]);
-            //    }
-            //    rows.add(row);
-            //}
-
-            //dt.clear();
-            //dt.clone();
-            //return serializer.serialize(rows);
+            string json = JsonConvert.SerializeObject(dt);
             return json;
 
         }

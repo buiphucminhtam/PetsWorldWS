@@ -141,6 +141,26 @@ namespace PetsWorldWebservice
                 return "0";
             }
         }
+          [WebMethod]
+         public string GetPostFindOwnerByAndPetId(int userid, int petid)
+         {
+             try
+             {
+                 string query = String.Format("select FindOwner.id,UserInfo.fullname,convert(varchar,FindOwner.datecreated,100) as [datecreated],PetInfo.id as [petId],PetInfo.name as [petname],PetType.typename,PetInfo.vaccine, FindOwner.userid as [userId], FindOwner.description, FindOwner.requirement, convert(varchar,PetInfo.vaccinedate,103) as [vaccinedate]"
+                 + " from FindOwner join UserInfo on FindOwner.userid = UserInfo.id"
+                 + " join Petinfo on FindOwner.petid = Petinfo.id"
+                 + " join PetType on PetInfo.typeid = PetType.id where FindOwner.userid = {0} and FindOwner.petid = {1}", userid, petid);
+                 clsDB db = new clsDB();
+                 DataTable dt = db.getDataTable(query);
+                 string s = XuLy.XuLy.ParseDataTableToJSon(dt);
+                 db.CLose_Connection();
+                 return s;
+             }
+             catch (Exception e)
+             {
+                 return "0";
+             }
+         }
 
         //Update Post
         [WebMethod]
@@ -226,6 +246,230 @@ namespace PetsWorldWebservice
             
         }
 
+        //POST FIND PET
+         [WebMethod]
+         public string GetPostMaxIdFindPet()
+         {
+             try
+             {
+                 //Đầu tiên sẽ query để lấy ra id lớn nhất của bài trong ngày trước
+                 string query = "select TOP 1 (id) from FindPet where DAY(datecreated) = DAY(GETDATE()) order by id desc";
+                 clsDB db = new clsDB();
+                 double maxId = 0;
+                 maxId = db.getFirstDoubleValueSqlCatchException(query);
+                 if (maxId == 0)
+                 { //Trường hợp này là ko có bài viết nào của ngày hiện tại nên lấy id lớn nhất trong 3 ngày tiếp theo
+                     query = "select TOP 1 (id) from FindPet" +
+                         " where DAY(datecreated) <= (DAY(GETDATE())-1) AND DAY(datecreated) > (DAY(GETDATE())-4)" +
+                         " order by id desc";
+                     maxId = db.getFirstDoubleValueSqlCatchException(query);
+                     if (maxId == 0)
+                     {//Trường hợp này vẫn không có bài viết nào trong 3 ngày tiếp theo nên sẽ lấy id max của tất cả các bài viết đang có
+                         query = "SELECT TOP 1(id) FROM FindPet order by id desc";
+                         maxId = db.getFirstDoubleValueSqlCatchException(query);
+                     }
+                 }
+                 db.CLose_Connection();
+                 return maxId.ToString();
+             }
+             catch (Exception e)
+             {
+                 return "0";
+             }
+         }
+
+         //Get 10 new post for load more
+         [WebMethod]
+         public string GetPostFindPetNewest(int id)// gửi lên cái id và sẽ nhận được 10 bài viết cũ, ban đầu sẽ gửi lên id 0 (sử dụng để load more)
+         {
+             try
+             {
+                 string query = String.Format("select FindPet.id,UserInfo.fullname,convert(varchar,FindPet.datecreated,100) as [datecreated],PetInfo.id as [petId],PetInfo.name as [petname],PetType.typename,PetInfo.vaccine, FindPet.userid as [userId], FindPet.description, FindPet.requirement, convert(varchar,PetInfo.vaccinedate,103) as [vaccinedate]"
+                 + " from FindPet join UserInfo on FindPet.userid = UserInfo.id"
+                 + " join Petinfo on FindPet.petid = Petinfo.id"
+                 + " join PetType on PetInfo.typeid = PetType.id where FindPet.id>{0} and FindPet.id<={0}+10", id);
+                 clsDB db = new clsDB();
+                 DataTable dt = db.getDataTable(query);
+                 string s = XuLy.XuLy.ParseDataTableToJSon(dt);
+                 db.CLose_Connection();
+                 return s;
+             }
+             catch (Exception e)
+             {
+                 return "0";
+             }
+         }
+
+         //Get 10 old post for load more
+         [WebMethod]
+         public string GetPostFindPetOlder(int id)// gửi lên cái id và sẽ nhận được 10 bài viết cũ, ban đầu sẽ gửi lên id 0 (sử dụng để load more)
+         {
+             if (id > 0)
+             {
+                 if (id - 10 >= 0) // kiểm tra xem còn đủ 10 bài để lấy ko nếu ko thì lấy hết
+                 {
+
+                     string query = String.Format("select FindPet.id,UserInfo.fullname,convert(varchar,FindPet.datecreated,100) as [datecreated],PetInfo.id as [petId],PetInfo.name as [petname],PetType.typename,PetInfo.vaccine, FindPet.userid as [userId], FindPet.description, FindPet.requirement, convert(varchar,PetInfo.vaccinedate,103) as [vaccinedate]"
+                 + " from FindPet join UserInfo on FindPet.userid = UserInfo.id"
+                 + " join Petinfo on FindPet.petid = Petinfo.id"
+                 + " join PetType on PetInfo.typeid = PetType.id where FindPet.id>={0}-10 and FindPet.id<={0} order by id desc", id);
+                     clsDB db = new clsDB();
+                     DataTable dt = db.getDataTable(query);
+                     string s = XuLy.XuLy.ParseDataTableToJSon(dt);
+                     db.CLose_Connection();
+                     return s;
+                 }
+                 else
+                 {
+                     string query = String.Format("select FindPet.id,UserInfo.fullname,convert(varchar,FindPet.datecreated,100) as [datecreated],PetInfo.id as [petId],PetInfo.name as [petname],PetType.typename,PetInfo.vaccine, FindPet.userid as [userId], FindPet.description, FindPet.requirement, convert(varchar,PetInfo.vaccinedate,103) as [vaccinedate]"
+                 + " from FindPet join UserInfo on FindPet.userid = UserInfo.id"
+                 + " join Petinfo on FindPet.petid = Petinfo.id"
+                 + " join PetType on PetInfo.typeid = PetType.id where FindPet.id<{0}", id);
+                     clsDB db = new clsDB();
+                     DataTable dt = db.getDataTable(query);
+                     string s = XuLy.XuLy.ParseDataTableToJSon(dt);
+                     db.CLose_Connection();
+                     return s;
+                 }
+
+             }
+
+             else return "0";
+         }
+
+
+         //Get post with user id
+         [WebMethod]
+         public string GetPostFindPetByUserId(int userId)
+         {
+             try
+             {
+                 string query = String.Format("select FindPet.id,UserInfo.fullname,convert(varchar,FindPet.datecreated,100) as [datecreated],PetInfo.id as [petId],PetInfo.name as [petname],PetType.typename,PetInfo.vaccine, FindPet.userid as [userId], FindPet.description, FindPet.requirement, convert(varchar,PetInfo.vaccinedate,103) as [vaccinedate]"
+                 + " from FindPet join UserInfo on FindPet.userid = UserInfo.id"
+                 + " join Petinfo on FindPet.petid = Petinfo.id"
+                 + " join PetType on PetInfo.typeid = PetType.id where FindPet.userid = {0}", userId);
+                 clsDB db = new clsDB();
+                 DataTable dt = db.getDataTable(query);
+                 string s = XuLy.XuLy.ParseDataTableToJSon(dt);
+                 db.CLose_Connection();
+                 return s;
+             }
+             catch (Exception e)
+             {
+                 return "0";
+             }
+         }
+            [WebMethod]
+         public string GetPostFindPetByUserIdAndPetId(int userid, int petid)
+         {
+             try
+             {
+                 string query = String.Format("select FindPet.id,UserInfo.fullname,convert(varchar,FindPet.datecreated,100) as [datecreated],PetInfo.id as [petId],PetInfo.name as [petname],PetType.typename,PetInfo.vaccine, FindPet.userid as [userId], FindPet.description, FindPet.requirement, convert(varchar,PetInfo.vaccinedate,103) as [vaccinedate]"
+                 + " from FindPet join UserInfo on FindPet.userid = UserInfo.id"
+                 + " join Petinfo on FindPet.petid = Petinfo.id"
+                 + " join PetType on PetInfo.typeid = PetType.id where FindPet.userid = {0} and FindPet.petid = {1}",userid,petid);
+                 clsDB db = new clsDB();
+                 DataTable dt = db.getDataTable(query);
+                 string s = XuLy.XuLy.ParseDataTableToJSon(dt);
+                 db.CLose_Connection();
+                 return s;
+             }
+             catch (Exception e)
+             {
+                 return "0";
+             }
+         }
+
+         //Update Post
+         [WebMethod]
+         public int UpdatePostFindPet(string jsonPost)
+         {
+             try
+             {
+                 JObject post = JObject.Parse(jsonPost);
+                 string query = "UPDATE FindPet"
+                         + " SET description = @description,"
+                         + " requirement = @requirement"
+                         + " WHERE id = @id";
+                 clsDB db = new clsDB();
+                 SqlCommand cmd = db.pSqlCmd;
+                 SqlConnection con = db.pConnection;
+                 cmd.CommandText = query;
+                 cmd.Connection = con;
+
+                 //Add values to query
+                 cmd.Parameters.AddWithValue("@description", post.GetValue("description").ToString());
+                 cmd.Parameters.AddWithValue("@requirement", post.GetValue("requirement").ToString());
+                 cmd.Parameters.AddWithValue("@id", Convert.ToInt64(post.GetValue("id")));
+
+                 cmd.ExecuteNonQuery();
+                 con.Close();
+
+                 return 1;
+             }
+             catch (Exception e)
+             {
+                 return 0;
+             }
+
+         }
+
+         //Delete Post
+         [WebMethod]
+         public int DeletePostFindPet(int id)
+         {
+             try
+             {
+                 string query = String.Format("DELETE FROM FindPet Where id = {0}", id);
+                 clsDB db = new clsDB();
+
+                 SqlCommand cmd = db.pSqlCmd;
+                 SqlConnection con = db.pConnection;
+                 cmd.CommandText = query;
+                 cmd.Connection = con;
+                 cmd.ExecuteNonQuery();
+                 con.Close();
+                 return 1;
+             }
+             catch (Exception e)
+             {
+                 return 0;
+             }
+         }
+
+         //Insert Post
+         [WebMethod]
+         public int InsertPostFindPet(string jsonPost)
+         {
+             try
+             {
+                 JObject post = JObject.Parse(jsonPost);
+                 string query = "Insert into FindPet " + "OUTPUT INSERTED.ID"
+                         + " values(@userid,@petid,@description,@requirement,GETDATE())";
+                 clsDB db = new clsDB();
+                 SqlCommand cmd = db.pSqlCmd;
+                 SqlConnection con = db.pConnection;
+                 cmd.CommandText = query;
+                 cmd.Connection = con;
+
+                 //Add values to query
+                 cmd.Parameters.AddWithValue("@userid", Convert.ToInt64(post.GetValue("userid").ToString()));
+                 cmd.Parameters.AddWithValue("@petid", Convert.ToInt64(post.GetValue("petid").ToString()));
+                 cmd.Parameters.AddWithValue("@description", post.GetValue("description").ToString());
+                 cmd.Parameters.AddWithValue("@requirement", post.GetValue("requirement").ToString());
+
+                 Int32 id = Convert.ToInt32(cmd.ExecuteScalar());
+                 con.Close();
+
+                 return id;
+             }
+             catch (Exception e)
+             {
+                 return 0;
+             }
+
+         }
+
 
         //USER INFO
         //Get User Info
@@ -233,7 +477,7 @@ namespace PetsWorldWebservice
          public String GetUserInfo(int id) {
              try
              {
-                 string query = String.Format("select * from UserInfo where id={0}", id);
+                 string query = String.Format("select id,username,fullname,phone,address,datecreated,userimage,state from UserInfo where id={0}", id);
                  clsDB db = new clsDB();
                  DataTable dt = db.getDataTable(query);
                  string s = XuLy.XuLy.ParseDataTableToJSon(dt);
@@ -307,6 +551,59 @@ namespace PetsWorldWebservice
 
                  return 1;
              }catch(Exception e)
+             {
+                 return 0;
+             }
+         }
+
+         [WebMethod]
+         public int LockUser(int id)
+         {
+             try
+             {
+                 string query = "Update UserInfo set state = 2 where id = @id";
+
+                 clsDB db = new clsDB();
+                 SqlCommand cmd = db.pSqlCmd;
+                 SqlConnection con = db.pConnection;
+                 cmd.CommandText = query;
+                 cmd.Connection = con;
+
+                 //Add values to query
+
+                 cmd.Parameters.AddWithValue("@id", id);
+
+                 cmd.ExecuteNonQuery();
+                 con.Close();
+                 return 1;
+             }
+             catch (Exception e)
+             {
+                 return 0;
+             }
+         }
+         [WebMethod]
+         public int UnlockUser(int id)
+         {
+             try
+             {
+                 string query = "Update UserInfo set state = 1 where id = @id";
+
+                 clsDB db = new clsDB();
+                 SqlCommand cmd = db.pSqlCmd;
+                 SqlConnection con = db.pConnection;
+                 cmd.CommandText = query;
+                 cmd.Connection = con;
+
+                 //Add values to query
+
+                 cmd.Parameters.AddWithValue("@id", id);
+
+                 cmd.ExecuteNonQuery();
+                 con.Close();
+                 return 1;
+             }
+             catch (Exception e)
              {
                  return 0;
              }
@@ -403,19 +700,47 @@ namespace PetsWorldWebservice
          }
 
         //Delete Pet Info
+         [WebMethod]
          public int DeletePetInfo(int id)
          {
              try
              {
-                 string query = String.Format("DELETE FROM PetInfo Where id = {0}", id);
-                 clsDB db = new clsDB();
+                 if (DeletePhotoById(id) == 1)
+                 {
+                     string query = String.Format("DELETE FROM PetInfo Where id = {0}", id);
+                     clsDB db = new clsDB();
 
-                 SqlCommand cmd = db.pSqlCmd;
-                 SqlConnection con = db.pConnection;
-                 cmd.CommandText = query;
-                 cmd.Connection = con;
-                 cmd.ExecuteNonQuery();
-                 con.Close();
+                     SqlCommand cmd = db.pSqlCmd;
+                     SqlConnection con = db.pConnection;
+                     cmd.CommandText = query;
+                     cmd.Connection = con;
+                     cmd.ExecuteNonQuery();
+                     con.Close();
+
+                     return 1;
+                 }
+                 else
+                     return 0;
+             }
+             catch (Exception e)
+             {
+                 return 0;
+             }
+         }
+
+         private int DeletePhotoById(int petId) {
+             try
+             {
+                 string query = String.Format("Select * from Photo Where petid = {0}", petId);
+                 clsDB db = new clsDB();
+                 DataTable dt = db.getDataTable(query);
+                 String result = XuLy.XuLy.ParseDataTableToJSon(dt);
+                 JArray JArray = JArray.Parse(result);
+                 foreach (JObject o in JArray.Children<JObject>())
+                 {
+                     string url = o.GetValue("url").ToString();
+                     DeleteFileFromFolder(url);
+                 }
                  return 1;
              }
              catch (Exception e)
@@ -529,8 +854,117 @@ namespace PetsWorldWebservice
              }
          }
 
+        //REPORT
+        //GET REPORT
+         [WebMethod]
+         public String GetReport()
+         {
+             try
+             {
+                 string query = String.Format("select id,userid,petid,msg,convert(varchar,Report.datecreated,100) as [datecreated],typepost from Report");
+                 clsDB db = new clsDB();
+                 DataTable dt = db.getDataTable(query);
+                 string s = XuLy.XuLy.ParseDataTableToJSon(dt);
+                 db.CLose_Connection();
+                 return s;
+             }
+             catch (Exception e)
+             {
+                 return "0";
+             }
+         }
+
+        //GET REPORT BY DATE
+         [WebMethod]
+         public String GetReportByDate(string date, int type)
+         {
+             try
+             {
+                 string query = "select id,userid,petid,msg,convert(varchar,Report.datecreated,100) as [datecreated],typepost from Report"
+                 + " where convert(varchar,Report.datecreated,103) = @date and Report.typepost = @type";
+                 clsDB db = new clsDB();
+                 SqlCommand cmd = db.pSqlCmd;
+                 SqlConnection con = db.pConnection;
+                 cmd.CommandText = query;
+                 cmd.Connection = con;
+
+                 //Add values to query
+                 cmd.Parameters.AddWithValue("@date", date);
+                 cmd.Parameters.AddWithValue("@type", type);
+
+                 DataTable dt = new DataTable("Table");
+                 dt.Load(cmd.ExecuteReader());
+                 string s = XuLy.XuLy.ParseDataTableToJSon(dt);
+
+                 con.Close();
+                 return s;
+             }
+             catch (Exception e)
+             {
+                 return "0";
+             }
+         }
+
+        //INSERT REPORT
+         [WebMethod]
+         public int InsertReport(string jsonReport)
+         {
+
+             try
+             {
+                 JObject report = JObject.Parse(jsonReport);
+                 string query = "Insert into Report"
+                         + " values(@userid,@petid,@msg,GETDATE(),@typepost)";
+                 clsDB db = new clsDB();
+                 SqlCommand cmd = db.pSqlCmd;
+                 SqlConnection con = db.pConnection;
+                 cmd.CommandText = query;
+                 cmd.Connection = con;
+
+                 //Add values to query
+
+                 cmd.Parameters.AddWithValue("@userid", int.Parse(report.GetValue("userid").ToString()));
+                 cmd.Parameters.AddWithValue("@petid", int.Parse(report.GetValue("petid").ToString()));
+                 cmd.Parameters.AddWithValue("@msg", report.GetValue("msg").ToString());
+                 cmd.Parameters.AddWithValue("@typepost", int.Parse(report.GetValue("typepost").ToString()));
+
+                 cmd.ExecuteNonQuery();
+                 con.Close();
+
+                 return 1;
+             }
+             catch (Exception e)
+             {
+                 return 0;
+             }
+         }
+
+        //DELETE REPORT
+         public int DeleteReport(int id)
+         {
+             try
+             {
+                 string query = String.Format("DELETE FROM Report Where id = {0}", id);
+                 clsDB db = new clsDB();
+
+                 SqlCommand cmd = db.pSqlCmd;
+                 SqlConnection con = db.pConnection;
+                 cmd.CommandText = query;
+                 cmd.Connection = con;
+                 cmd.ExecuteNonQuery();
+                 con.Close();
+                 return 1;
+             }
+             catch (Exception e)
+             {
+                 return 0;
+             }
+         }
+
 
         //REGISTER AND LOGIN
+        //Lock Account
+        //Unlock Account
         //Đăng kí
         [WebMethod]
         public int Register(String userinfo)
@@ -557,7 +991,7 @@ namespace PetsWorldWebservice
 
                      String query = "INSERT INTO UserInfo"
                          + " (username,password,fullname,phone,address,datecreated,userimage)"
-                         + " VALUES(@username,PWDENCRYPT(@password),@fullname,@phone,@address,GETDATE(),@userimage)";
+                         + " VALUES(@username,PWDENCRYPT(@password),@fullname,@phone,@address,GETDATE(),@userimage,@state)";
 
                      cmd.CommandText = query;
 
@@ -568,6 +1002,7 @@ namespace PetsWorldWebservice
                      cmd.Parameters.AddWithValue("@phone", user.GetValue("phone").ToString());
                      cmd.Parameters.AddWithValue("@address", user.GetValue("address").ToString());
                      cmd.Parameters.AddWithValue("@userimage", user.GetValue("userimage").ToString());
+                     cmd.Parameters.AddWithValue("@state", 1);
 
                      cmd.ExecuteNonQuery();
                      con.Close();
@@ -589,6 +1024,7 @@ namespace PetsWorldWebservice
             dtResult.Columns.Add(new DataColumn("MSG", Type.GetType("System.String")));
             dtResult.Columns.Add(new DataColumn("fullname", Type.GetType("System.String")));
             dtResult.Columns.Add(new DataColumn("id", Type.GetType("System.Int32")));
+            dtResult.Columns.Add(new DataColumn("state", Type.GetType("System.Int32")));
             DataRow dong = dtResult.NewRow();
             dtResult.Rows.Add(dong);
 
@@ -597,6 +1033,8 @@ namespace PetsWorldWebservice
             dong["MSG"] = "";
             dong["fullname"] = "";
             dong["id"] = "0";
+            dong["state"] = "0";
+
             clsDB db = null;
             try
             {
@@ -616,15 +1054,17 @@ namespace PetsWorldWebservice
                 //get fullname and userId
                 string fullname = "";
                 int id = 0;
+                int state = 0;
 
 
-                query = " select fullname,id from UserInfo  where username=N'" + userName + "' ";
+                query = " select fullname,id,state from UserInfo  where username=N'" + userName + "' ";
                 DataTable kh = db.getDataTable(query);
 
                 if (kh.Rows.Count > 0)
                 {
                     fullname = kh.Rows[0]["fullname"].ToString();
                     id = int.Parse(kh.Rows[0]["id"].ToString());
+                    state = int.Parse(kh.Rows[0]["state"].ToString());
                 }
 
           
@@ -632,6 +1072,8 @@ namespace PetsWorldWebservice
                 dong["MSG"] = "Đăng nhập thành công!";
                 dong["fullname"] = fullname;
                 dong["id"] = id;
+                dong["state"] = state;
+
                 db.CLose_Connection();
 
                 return XuLy.XuLy.ParseDataTableToJSon(dtResult);
