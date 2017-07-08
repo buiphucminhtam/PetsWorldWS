@@ -64,7 +64,7 @@ namespace PetsWorldWebservice
         
         //Get 10 new post for load more
          [WebMethod]
-        public string GetPostFindOwnerNewest(int id)// gửi lên cái id và sẽ nhận được 10 bài viết cũ, ban đầu sẽ gửi lên id 0 (sử dụng để load more)
+        public string GetPostFindOwnerNewest(int id)// gửi lên cái id và sẽ nhận được 10 bài viết mới, ban đầu sẽ gửi lên id 0 (sử dụng để load more)
         {
             try
             {
@@ -975,7 +975,7 @@ namespace PetsWorldWebservice
              clsDB db = new clsDB();
     
              //query
-             String queryCheck = String.Format("Select id from UserInfo where username = {0}", user.GetValue("username"));
+             String queryCheck = String.Format("Select id from UserInfo where UserInfo.username = {0}", user.GetValue("username").ToString());
              double id = db.getFirstDoubleValueSqlCatchException(queryCheck);
 
              if (id > 0)
@@ -990,8 +990,8 @@ namespace PetsWorldWebservice
                  {
 
                      String query = "INSERT INTO UserInfo"
-                         + " (username,password,fullname,phone,address,datecreated,userimage)"
-                         + " VALUES(@username,PWDENCRYPT(@password),@fullname,@phone,@address,GETDATE(),@userimage,@state)";
+                         + " (username,password,fullname,phone,address,datecreated,userimage,state)"
+                         + " VALUES(@username,PWDENCRYPT(@password),@fullname,@phone,@address,GETDATE(),@userimage,1)";
 
                      cmd.CommandText = query;
 
@@ -1002,7 +1002,6 @@ namespace PetsWorldWebservice
                      cmd.Parameters.AddWithValue("@phone", user.GetValue("phone").ToString());
                      cmd.Parameters.AddWithValue("@address", user.GetValue("address").ToString());
                      cmd.Parameters.AddWithValue("@userimage", user.GetValue("userimage").ToString());
-                     cmd.Parameters.AddWithValue("@state", 1);
 
                      cmd.ExecuteNonQuery();
                      con.Close();
