@@ -68,7 +68,7 @@ namespace PetsWorldWebservice
         {
             try
             {
-                string query = String.Format("select FindOwner.id,UserInfo.fullname,convert(varchar,FindOwner.datecreated,100) as [datecreated],PetInfo.id as [petId],PetInfo.name as [petname],PetType.typename,PetInfo.vaccine, FindOwner.userid as [userId], FindOwner.description, FindOwner.requirement, convert(varchar,PetInfo.vaccinedate,103) as [vaccinedate]"
+                string query = String.Format("select FindOwner.id,UserInfo.fullname,convert(varchar,FindOwner.datecreated,100) as [datecreated],PetInfo.id as [petId],PetInfo.name as [petname],PetType.typename,PetInfo.vaccine, FindOwner.userid as [userId], FindOwner.description, FindOwner.requirement, FindOwner.address, FindOwner.longitude, FindOwner.latitute, convert(varchar,PetInfo.vaccinedate,103) as [vaccinedate]"
                 +" from FindOwner join UserInfo on FindOwner.userid = UserInfo.id" 
                 +" join Petinfo on FindOwner.petid = Petinfo.id"
                 + " join PetType on PetInfo.typeid = PetType.id where FindOwner.id>{0} and FindOwner.id<={0}+10", id);
@@ -92,7 +92,7 @@ namespace PetsWorldWebservice
                 if(id-10>=0) // kiểm tra xem còn đủ 10 bài để lấy ko nếu ko thì lấy hết
                 {
 
-                    string query = String.Format("select FindOwner.id,UserInfo.fullname,convert(varchar,FindOwner.datecreated,100) as [datecreated],PetInfo.id as [petId],PetInfo.name as [petname],PetType.typename,PetInfo.vaccine, FindOwner.userid as [userId], FindOwner.description, FindOwner.requirement, convert(varchar,PetInfo.vaccinedate,103) as [vaccinedate]"
+                    string query = String.Format("select FindOwner.id,UserInfo.fullname,convert(varchar,FindOwner.datecreated,100) as [datecreated],PetInfo.id as [petId],PetInfo.name as [petname],PetType.typename,PetInfo.vaccine, FindOwner.userid as [userId], FindOwner.description, FindOwner.requirement, FindOwner.address, FindOwner.longitude, FindOwner.latitute, convert(varchar,PetInfo.vaccinedate,103) as [vaccinedate]"
                 + " from FindOwner join UserInfo on FindOwner.userid = UserInfo.id"
                 + " join Petinfo on FindOwner.petid = Petinfo.id"
                 + " join PetType on PetInfo.typeid = PetType.id where FindOwner.id>={0}-10 and FindOwner.id<={0} order by id desc", id);
@@ -123,10 +123,10 @@ namespace PetsWorldWebservice
 
         //Get post with user id
          [WebMethod]
-        public string GetPostFindOwnerByUserId(int userId){
+         public string GetPostFindOwnerByUserId(int userId){
             try
             {
-                string query = String.Format("select FindOwner.id,UserInfo.fullname,convert(varchar,FindOwner.datecreated,100) as [datecreated],PetInfo.id as [petId],PetInfo.name as [petname],PetType.typename,PetInfo.vaccine, FindOwner.userid as [userId], FindOwner.description, FindOwner.requirement, convert(varchar,PetInfo.vaccinedate,103) as [vaccinedate]"
+                string query = String.Format("select FindOwner.id,UserInfo.fullname,convert(varchar,FindOwner.datecreated,100) as [datecreated],PetInfo.id as [petId],PetInfo.name as [petname],PetType.typename,PetInfo.vaccine, FindOwner.userid as [userId], FindOwner.description, FindOwner.requirement, FindOwner.address, FindOwner.longitude, FindOwner.latitute,convert(varchar,PetInfo.vaccinedate,103) as [vaccinedate]"
                 + " from FindOwner join UserInfo on FindOwner.userid = UserInfo.id"
                 + " join Petinfo on FindOwner.petid = Petinfo.id"
                 + " join PetType on PetInfo.typeid = PetType.id where FindOwner.userid = {0}", userId);
@@ -146,7 +146,7 @@ namespace PetsWorldWebservice
          {
              try
              {
-                 string query = String.Format("select FindOwner.id,UserInfo.fullname,convert(varchar,FindOwner.datecreated,100) as [datecreated],PetInfo.id as [petId],PetInfo.name as [petname],PetType.typename,PetInfo.vaccine, FindOwner.userid as [userId], FindOwner.description, FindOwner.requirement, convert(varchar,PetInfo.vaccinedate,103) as [vaccinedate]"
+                 string query = String.Format("select FindOwner.id,UserInfo.fullname,convert(varchar,FindOwner.datecreated,100) as [datecreated],PetInfo.id as [petId],PetInfo.name as [petname],PetType.typename,PetInfo.vaccine, FindOwner.userid as [userId], FindOwner.description, FindOwner.requirement, FindOwner.address, FindOwner.longitude, FindOwner.latitute,convert(varchar,PetInfo.vaccinedate,103) as [vaccinedate]"
                  + " from FindOwner join UserInfo on FindOwner.userid = UserInfo.id"
                  + " join Petinfo on FindOwner.petid = Petinfo.id"
                  + " join PetType on PetInfo.typeid = PetType.id where FindOwner.userid = {0} and FindOwner.petid = {1}", userid, petid);
@@ -170,7 +170,10 @@ namespace PetsWorldWebservice
             JObject post = JObject.Parse(jsonPost);
             string query = "UPDATE FindOwner"
                     +" SET description = @description,"
-                    +" requirement = @requirement"
+                    +" requirement = @requirement,"
+                    +" address = @address,"
+                    +" longitude = @longitude,"
+                    +" latitute = @latitute"
                     +" WHERE id = @id";
             clsDB db = new clsDB();
             SqlCommand cmd = db.pSqlCmd;
@@ -182,6 +185,9 @@ namespace PetsWorldWebservice
             cmd.Parameters.AddWithValue("@description",post.GetValue("description").ToString());
             cmd.Parameters.AddWithValue("@requirement",post.GetValue("requirement").ToString());
             cmd.Parameters.AddWithValue("@id",Convert.ToInt64(post.GetValue("id")));
+            cmd.Parameters.AddWithValue("@address", post.GetValue("address").ToString());
+            cmd.Parameters.AddWithValue("@longitude", Double.Parse(post.GetValue("longitude").ToString()));
+            cmd.Parameters.AddWithValue("@latitute", Double.Parse(post.GetValue("latitute").ToString()));
 
             cmd.ExecuteNonQuery();
             con.Close();
@@ -222,7 +228,7 @@ namespace PetsWorldWebservice
             try{
                 JObject post = JObject.Parse(jsonPost);
                 string query = "Insert into FindOwner " + "OUTPUT INSERTED.ID"
-                        +" values(@userid,@petid,@description,@requirement,GETDATE())";
+                        + " values(@userid,@petid,@description,@requirement,GETDATE(),@address,@longitude,@latitute)";
                 clsDB db = new clsDB();
                 SqlCommand cmd = db.pSqlCmd;
                 SqlConnection con = db.pConnection;
@@ -234,6 +240,9 @@ namespace PetsWorldWebservice
                 cmd.Parameters.AddWithValue("@petid", Convert.ToInt64(post.GetValue("petid").ToString()));
                 cmd.Parameters.AddWithValue("@description", post.GetValue("description").ToString());
                 cmd.Parameters.AddWithValue("@requirement", post.GetValue("requirement").ToString());
+                cmd.Parameters.AddWithValue("@address", post.GetValue("address").ToString());
+                cmd.Parameters.AddWithValue("@longitude", Double.Parse(post.GetValue("longitude").ToString()));
+                cmd.Parameters.AddWithValue("@latitute", Double.Parse(post.GetValue("latitute").ToString()));
 
                 Int32 id = Convert.ToInt32(cmd.ExecuteScalar());
                 con.Close();
@@ -284,7 +293,7 @@ namespace PetsWorldWebservice
          {
              try
              {
-                 string query = String.Format("select FindPet.id,UserInfo.fullname,convert(varchar,FindPet.datecreated,100) as [datecreated],PetInfo.id as [petId],PetInfo.name as [petname],PetType.typename,PetInfo.vaccine, FindPet.userid as [userId], FindPet.description, FindPet.requirement, convert(varchar,PetInfo.vaccinedate,103) as [vaccinedate]"
+                 string query = String.Format("select FindPet.id,UserInfo.fullname,convert(varchar,FindPet.datecreated,100) as [datecreated],PetInfo.id as [petId],PetInfo.name as [petname],PetType.typename,PetInfo.vaccine, FindPet.userid as [userId], FindPet.description, FindPet.requirement, FindPet.address, FindPet.longitude, FindPet.latitute, convert(varchar,PetInfo.vaccinedate,103) as [vaccinedate]"
                  + " from FindPet join UserInfo on FindPet.userid = UserInfo.id"
                  + " join Petinfo on FindPet.petid = Petinfo.id"
                  + " join PetType on PetInfo.typeid = PetType.id where FindPet.id>{0} and FindPet.id<={0}+10", id);
@@ -309,7 +318,7 @@ namespace PetsWorldWebservice
                  if (id - 10 >= 0) // kiểm tra xem còn đủ 10 bài để lấy ko nếu ko thì lấy hết
                  {
 
-                     string query = String.Format("select FindPet.id,UserInfo.fullname,convert(varchar,FindPet.datecreated,100) as [datecreated],PetInfo.id as [petId],PetInfo.name as [petname],PetType.typename,PetInfo.vaccine, FindPet.userid as [userId], FindPet.description, FindPet.requirement, convert(varchar,PetInfo.vaccinedate,103) as [vaccinedate]"
+                     string query = String.Format("select FindPet.id,UserInfo.fullname,convert(varchar,FindPet.datecreated,100) as [datecreated],PetInfo.id as [petId],PetInfo.name as [petname],PetType.typename,PetInfo.vaccine, FindPet.userid as [userId], FindPet.description, FindPet.requirement, FindPet.address, FindPet.longitude, FindPet.latitute, convert(varchar,PetInfo.vaccinedate,103) as [vaccinedate]"
                  + " from FindPet join UserInfo on FindPet.userid = UserInfo.id"
                  + " join Petinfo on FindPet.petid = Petinfo.id"
                  + " join PetType on PetInfo.typeid = PetType.id where FindPet.id>={0}-10 and FindPet.id<={0} order by id desc", id);
@@ -344,7 +353,7 @@ namespace PetsWorldWebservice
          {
              try
              {
-                 string query = String.Format("select FindPet.id,UserInfo.fullname,convert(varchar,FindPet.datecreated,100) as [datecreated],PetInfo.id as [petId],PetInfo.name as [petname],PetType.typename,PetInfo.vaccine, FindPet.userid as [userId], FindPet.description, FindPet.requirement, convert(varchar,PetInfo.vaccinedate,103) as [vaccinedate]"
+                 string query = String.Format("select FindPet.id,UserInfo.fullname,convert(varchar,FindPet.datecreated,100) as [datecreated],PetInfo.id as [petId],PetInfo.name as [petname],PetType.typename,PetInfo.vaccine, FindPet.userid as [userId], FindPet.description, FindPet.requirement, FindPet.address, FindPet.longitude, FindPet.latitute, convert(varchar,PetInfo.vaccinedate,103) as [vaccinedate]"
                  + " from FindPet join UserInfo on FindPet.userid = UserInfo.id"
                  + " join Petinfo on FindPet.petid = Petinfo.id"
                  + " join PetType on PetInfo.typeid = PetType.id where FindPet.userid = {0}", userId);
@@ -364,7 +373,7 @@ namespace PetsWorldWebservice
          {
              try
              {
-                 string query = String.Format("select FindPet.id,UserInfo.fullname,convert(varchar,FindPet.datecreated,100) as [datecreated],PetInfo.id as [petId],PetInfo.name as [petname],PetType.typename,PetInfo.vaccine, FindPet.userid as [userId], FindPet.description, FindPet.requirement, convert(varchar,PetInfo.vaccinedate,103) as [vaccinedate]"
+                 string query = String.Format("select FindPet.id,UserInfo.fullname,convert(varchar,FindPet.datecreated,100) as [datecreated],PetInfo.id as [petId],PetInfo.name as [petname],PetType.typename,PetInfo.vaccine, FindPet.userid as [userId], FindPet.description, FindPet.requirement, FindPet.address, FindPet.longitude, FindPet.latitute, convert(varchar,PetInfo.vaccinedate,103) as [vaccinedate]"
                  + " from FindPet join UserInfo on FindPet.userid = UserInfo.id"
                  + " join Petinfo on FindPet.petid = Petinfo.id"
                  + " join PetType on PetInfo.typeid = PetType.id where FindPet.userid = {0} and FindPet.petid = {1}",userid,petid);
@@ -389,7 +398,10 @@ namespace PetsWorldWebservice
                  JObject post = JObject.Parse(jsonPost);
                  string query = "UPDATE FindPet"
                          + " SET description = @description,"
-                         + " requirement = @requirement"
+                         + " requirement = @requirement,"
+                         + " address = @address,"
+                         + " longitude = @longitude,"
+                         + " latitute = @latitute"
                          + " WHERE id = @id";
                  clsDB db = new clsDB();
                  SqlCommand cmd = db.pSqlCmd;
@@ -401,6 +413,9 @@ namespace PetsWorldWebservice
                  cmd.Parameters.AddWithValue("@description", post.GetValue("description").ToString());
                  cmd.Parameters.AddWithValue("@requirement", post.GetValue("requirement").ToString());
                  cmd.Parameters.AddWithValue("@id", Convert.ToInt64(post.GetValue("id")));
+                 cmd.Parameters.AddWithValue("@address", post.GetValue("address").ToString());
+                 cmd.Parameters.AddWithValue("@longitude", Double.Parse(post.GetValue("longitude").ToString()));
+                 cmd.Parameters.AddWithValue("@latitute", Double.Parse(post.GetValue("latitute").ToString()));
 
                  cmd.ExecuteNonQuery();
                  con.Close();
@@ -445,7 +460,7 @@ namespace PetsWorldWebservice
              {
                  JObject post = JObject.Parse(jsonPost);
                  string query = "Insert into FindPet " + "OUTPUT INSERTED.ID"
-                         + " values(@userid,@petid,@description,@requirement,GETDATE())";
+                         + " values(@userid,@petid,@description,@requirement,GETDATE(),@address,@longitude,@latitute)";
                  clsDB db = new clsDB();
                  SqlCommand cmd = db.pSqlCmd;
                  SqlConnection con = db.pConnection;
@@ -457,6 +472,9 @@ namespace PetsWorldWebservice
                  cmd.Parameters.AddWithValue("@petid", Convert.ToInt64(post.GetValue("petid").ToString()));
                  cmd.Parameters.AddWithValue("@description", post.GetValue("description").ToString());
                  cmd.Parameters.AddWithValue("@requirement", post.GetValue("requirement").ToString());
+                 cmd.Parameters.AddWithValue("@address", post.GetValue("address").ToString());
+                 cmd.Parameters.AddWithValue("@longitude", Double.Parse(post.GetValue("longitude").ToString()));
+                 cmd.Parameters.AddWithValue("@latitute", Double.Parse(post.GetValue("latitute").ToString()));
 
                  Int32 id = Convert.ToInt32(cmd.ExecuteScalar());
                  con.Close();
@@ -469,7 +487,6 @@ namespace PetsWorldWebservice
              }
 
          }
-
 
         //USER INFO
         //Get User Info
@@ -1013,7 +1030,6 @@ namespace PetsWorldWebservice
              }
              return 1;
         }
-
         //Đăng nhập
         [WebMethod]
         public string Login(string userName, string passWord)
